@@ -6,7 +6,7 @@
 using namespace std;
 
 int main(int argc, char **argv) {
-	DataSet *d = readDataFromCSV("data.csv");
+	DataSet *d = readDataFromCustomFile("data.dat");
 	d->print();
 	return 0;
 }

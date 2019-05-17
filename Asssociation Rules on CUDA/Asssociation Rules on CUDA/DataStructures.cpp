@@ -2,51 +2,73 @@
 #include <fstream>
 #include <sstream>
 
-DataSet::DataSet(vector<string>& label) {
-	this->label = &label;
-	this->data = new map<string, map<string, string>*>;
-	for (int i = 0; i < (int)label.size(); i++) {
-		data->insert({ label[i], new map<string,string>() });
-	}
-};
 
 void DataSet::print() {
-	cout << "Attributes set: ";
-	for (map<string, map<string, string>*>::iterator i = data->begin(); i != data->end(); i++) {
-		cout << i->first << " ";
-	}
-	cout << endl << endl;
-
-	for (map<string, map<string, string>*>::iterator i = data->begin(); i != data->end(); i++) {
-		cout << "Value in attribute \"" << i->first << "\": ";
-		map<string, string>* currentAttr = i->second;
-		for (map<string, string>::iterator j = currentAttr->begin(); j != currentAttr->end(); j++) {
-			cout << "\"" << j->first << "\":\"" << j->second << "\" ";
+	cout << "\nPrinting dataset: " << endl;
+	for (map<string, set<string>*>::iterator i = data->begin(); i != data->end(); i++) {
+		cout << "Key: \"" << i->first << "\"" << endl;
+		set<string>* currentKey = i->second;
+		for (set<string>::iterator j = currentKey->begin(); j != currentKey->end(); j++) {
+			cout << "\"" << *j << "\" ";
 		}
-		cout << endl;
+		cout << endl << endl;
 	}
 }
 
-bool DataSet::checkAttributeExist(string attr) {
-	map<string, map<string, string>*>::iterator it = data->find(attr);
-	return (it != data->end());
-}
-
-bool DataSet::insert(string attr, string fieldName, string value) {
-	if (!checkAttributeExist(attr)) {
-		cout << "ERROR: while adding value(s) to dataset: Attribute does not exist" << endl;
-	}
-	data->at(attr)->insert({ fieldName,value });
+bool DataSet::insert(string &key, string &value) {
+	if (!checkIfExist(key)) data->insert({ key, new set<string>() });
+	data->at(key)->insert(value);
 	return true;
 }
 
+bool DataSet::checkIfExist(string &key, string &value) {
+	if (data->find(key) == data->end()) return false;
+	if (data->find(key)->second->count(value) == 0) return false;
+	return true;
 
+}
 
+bool DataSet::checkIfExist(string &key) {
+	if (data->find(key) == data->end()) return false;
+	return true;
+}
 
+bool DataSet::remove(string &key, string &value) {
+	if (!checkIfExist(key, value)) {
+		cout << "ERROR: while removing value(s) from dataset: key or value does not exist" << endl;
+		return false;
+	}
+	data->find(key)->second->erase(value);
+	return true;
+};
+
+bool DataSet::removeValue(string &value) {
+	map<string, set<string>*>::iterator it;
+	for (it = data->begin(); it != data->end(); it++) {
+		set<string>* currentSet = it->second;
+		currentSet->erase(value);
+	}
+	return true;
+}
+
+bool DataSet::removeKey(string &key) {
+	if (!checkIfExist(key)) {
+		cout << "ERROR: while removing key from dataset: key does not exist" << endl;
+		return false;
+	}
+	data->find(key)->second->clear();
+	data->erase(key);
+	return true;
+}
+
+void DataSet::setLabelList(vector<string> &labelList) {
+	this->label = &labelList;
+}
+
+// Data format: normal csv
+// First row: "name", "attr1", "attr2",...
+// Each row: "name", "value of att1", "value of att2",...
 DataSet *readDataFromCSV(string filename) {
-	// Data format:
-	// First row: "name", "attr1", "attr2",...
-	// Each row: "name", "value of att1", "value of att2",...
 	string line;
 
 	ifstream ifStream; ifStream.open(filename, ios::in);
@@ -65,7 +87,8 @@ DataSet *readDataFromCSV(string filename) {
 			attrSet->push_back("");
 		}
 	}
-	DataSet *d = new DataSet(*attrSet);
+	DataSet *d = new DataSet();
+	d->setLabelList(*attrSet);
 
 	// Get each line and parse its data
 	while (getline(ifStream, line)) {
@@ -74,7 +97,7 @@ DataSet *readDataFromCSV(string filename) {
 
 		// Get row name - the first value
 		char c;
-		string rowName = "";
+		string rowName = "_id_";
 
 		while (ss >> c) {
 			rowName += c;
@@ -83,15 +106,14 @@ DataSet *readDataFromCSV(string filename) {
 				break;
 			}
 		}
-		d->insert(attrSet->at(0), rowName, rowName);
 		// Now get these value
 		int attrIndex = 1;
 		string currentValue = "";
 		while (ss >> c) {
 			if (c == ',') {
-				if (currentValue != "")
-					d->insert(attrSet->at(attrIndex), rowName, currentValue);
-
+				if (currentValue == "Y" || currentValue == "y") { // We consider 'y', 'Y' as yes, others is considered as no
+					d->insert(rowName, d->getLabelAt(attrIndex));
+				}
 				attrIndex++;
 				currentValue = "";
 			}
@@ -99,10 +121,45 @@ DataSet *readDataFromCSV(string filename) {
 				currentValue += c;
 			}
 		}
-		if (currentValue != "")  // Final value does not end up with ','
-			d->insert(attrSet->at(attrIndex), rowName, currentValue);
+		if (currentValue == "Y" || currentValue == "y") { // Final value
+			d->insert(rowName, d->getLabelAt(attrIndex));
+		}
 	}
 
 	return d;
 
+}
+
+// Data format: custom
+// Each row: "value1" "value2" "value3" ...
+DataSet *readDataFromCustomFile(string filename) {
+	DataSet *d = new DataSet();
+	string line;
+	ifstream ifStream; ifStream.open(filename, ios::in);
+	// Get each line and parse its data
+	int lineID = 0;
+	while (getline(ifStream, line)) {
+		if (line == "") continue;
+		stringstream ss(line);
+
+		// Get row name - the first value
+		char c;
+		string rowName = "_id_" + to_string(++lineID);
+		// Now get these value
+		int attrIndex = 1;
+		string currentValue = "";
+		while (ss >> currentValue) {
+			if (true) {
+				if (currentValue != "" && currentValue != " ")
+					d->insert(rowName, currentValue);
+				currentValue = "";
+			}
+			else {
+				currentValue += c;
+			}
+		}
+		if (currentValue != "" && currentValue != " ")
+			d->insert(rowName, currentValue);
+	}
+	return d;
 }

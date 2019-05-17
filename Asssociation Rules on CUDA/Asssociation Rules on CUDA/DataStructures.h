@@ -10,7 +10,8 @@
 using namespace std;
 
 // Dataset
-// Data is stored in column-base
+// Data is stored in row-set base
+// NO labels are needed
 class DataSet {
 private:
 	// List of label (following the input order)
@@ -21,15 +22,14 @@ private:
 
 	// Map of data
 	// (key, value) = (Attribute name, Set of value)
-	map<string, map<string,string>*>* data = NULL;
+	map<string, set<string>*>* data;
 
-	// Default constructor is disabled
-	DataSet() {};
+	
 public:
-
-	// Inital dataset constructor
-	//		@label: vector of attribute names
-	DataSet(vector<string>& label);
+	// Default constructor
+	DataSet() {
+		data = new map<string, set<string>*>();
+	};
 
 	// Destructor
 	~DataSet() {
@@ -48,19 +48,48 @@ public:
 	// Print the dataset to console for debugging
 	void print();
 
-	// Check if a attribute is in dataset
-	bool checkAttributeExist(string attr);
-
 	// Add a value to an attribute
 	//		@attr: attribute name (column)
 	//		@fieldName: field name (row id)
-	bool insert(string attr, string fieldName,string value);
+	bool insert(string &key,string &value);
 
+	// Check if a (key,value) exists in dataset
+	//		@key: row name
+	//		@value: value
+	bool checkIfExist(string &key, string &value);
 
+	// Check if a key exists in dataset
+	//		@key: row name
+	bool checkIfExist(string &key);
+
+	// Remove a value from dataset
+	//		@attr: attribute name (column)
+	//		@fieldName: field name (row id)
+	bool remove(string &key, string &value);
+
+	// Remove a value from every set in dataset
+	//		@value: value to remove
+	bool removeValue(string &value);
+
+	// Remove a key from dataset
+	//		@value: value to remove
+	bool removeKey(string &key);
+
+	// Set label list
+	//		@labelList: vector of labels
+	void setLabelList(vector<string> &labelList);
+
+	// Get label at index (1-index)
+	//		@index: index of label to get
+	string &getLabelAt(int index) {
+		return label->at(index);
+	}
 };
 
 
 // Read data from csv file and return a DataSet
 DataSet *readDataFromCSV(string filename);
 
+// Read data from custom dat file and return a Dataset
+DataSet *readDataFromCustomFile(string filename);
 #endif
