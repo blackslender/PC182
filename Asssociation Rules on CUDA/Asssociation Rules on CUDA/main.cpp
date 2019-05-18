@@ -1,41 +1,32 @@
-#include <cstdio>
-#include "SharedHeader.h"
-#include "DataStructures.h"
+#include <iostream>
 #include <vector>
 #include <string>
+#include <set>
+#include "support.h"
+
 using namespace std;
 
+#define SUP_RATE 0.6
+#define CONFIDENCE 0.9
+
 int main(int argc, char **argv) {
-	DataSet *d = readDataFromCustomFile("data.dat");
-	d->print();
+
+	if (!testCudaForError()) cout << "Error while working with GPU...\n";
+
+	Dataset *d = new Dataset(16);
+
+	set<string> s;
+	s.insert("attr1");
+	s.insert("attr2");
+	s.insert("attr3");
+	d->newRecord(s);
+	set<string> s2,s3;
+	s2.insert("attr2");
+	s2.insert("attr3");
+	d->newRecord(s2);
+	s3.insert("atr4");
+	d->newRecord(s3);
 	return 0;
 }
 
 
-//int main()
-//{
-//	const int arraySize = 5;
-//	const int a[arraySize] = { 1, 2, 3, 4, 5 };
-//	const int b[arraySize] = { 10, 20, 30, 40, 50 };
-//	int c[arraySize] = { 0 };
-//
-//	// Add vectors in parallel.
-//	cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);
-//	if (cudaStatus != cudaSuccess) {
-//		fprintf(stderr, "addWithCuda failed!");
-//		return 1;
-//	}
-//
-//	printf("{1,2,3,4,5} + {10,20,30,40,50} = {%d,%d,%d,%d,%d}\n",
-//		c[0], c[1], c[2], c[3], c[4]);
-//
-//	// cudaDeviceReset must be called before exiting in order for profiling and
-//	// tracing tools such as Nsight and Visual Profiler to show complete traces.
-//	cudaStatus = cudaDeviceReset();
-//	if (cudaStatus != cudaSuccess) {
-//		fprintf(stderr, "cudaDeviceReset failed!");
-//		return 1;
-//	}
-//
-//	return 0;
-//}

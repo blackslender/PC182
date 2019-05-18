@@ -8,8 +8,12 @@ __global__ void addKernel(int *c, const int *a, const int *b)
 }
 
 // Helper function for using CUDA to add vectors in parallel.
-cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
+cudaError_t testCudaForError()
 {
+	int size = 3;
+	int a[3] = { 1,2,3 };
+	int b[3] = { 1,2,3 };
+	int c[3] = { 0,0,0 };
     int *dev_a = 0;
     int *dev_b = 0;
     int *dev_c = 0;
@@ -78,6 +82,9 @@ cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size)
         fprintf(stderr, "cudaMemcpy failed!");
         goto Error;
     }
+
+	// Check output value
+	if (!(c[0] == 2 && c[1] == 4 && c[2] == 6)) cudaStatus = cudaErrorInvalidValue;
 
 Error:
     cudaFree(dev_c);

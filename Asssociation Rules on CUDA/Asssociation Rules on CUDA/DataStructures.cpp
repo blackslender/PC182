@@ -65,6 +65,22 @@ void DataSet::setLabelList(vector<string> &labelList) {
 	this->label = &labelList;
 }
 
+
+// Value count statistics
+map<string, int>* DataSet::valueCount() {
+	map<string, set<string>*>::iterator iKey;
+	for (iKey = data->begin(); iKey != data->end(); iKey++) {
+		set<string>::iterator iValue;
+		for (iValue = iKey->second->begin(); iValue != iKey->second->end(); iValue++) {
+			if (vCount->find(*iValue) == vCount->end())
+				vCount->insert({ *iValue,0 });
+			(*vCount)[*iValue]++;
+
+		}
+	}
+	return vCount;
+}
+
 // Data format: normal csv
 // First row: "name", "attr1", "attr2",...
 // Each row: "name", "value of att1", "value of att2",...
@@ -162,4 +178,13 @@ DataSet *readDataFromCustomFile(string filename) {
 			d->insert(rowName, currentValue);
 	}
 	return d;
+}
+
+int DataSet::keyCount() {
+	return data->size();
+}
+
+int DataSet::valueCount(string &key) {
+	if (!checkIfExist(key)) return -1;
+	return data->find(key)->second->size();
 }

@@ -14,21 +14,26 @@ using namespace std;
 // NO labels are needed
 class DataSet {
 private:
-	// List of label (following the input order)
-	vector<string> *label = NULL;
-
 	// Number of attributes in dataset
 	int nAttr;
 
+	
+	// List of label (following the input order)
+	vector<string> *label = NULL;
+
+	
 	// Map of data
 	// (key, value) = (Attribute name, Set of value)
 	map<string, set<string>*>* data;
 
+	// Value count
+	map<string, int> *vCount;
 	
 public:
 	// Default constructor
 	DataSet() {
 		data = new map<string, set<string>*>();
+		vCount = new map<string, int>();
 	};
 
 	// Destructor
@@ -84,6 +89,17 @@ public:
 	string &getLabelAt(int index) {
 		return label->at(index);
 	}
+
+	// Get number of key in dataset
+	int keyCount();
+
+	// Get number of value in a key
+	// Return -1 if the key does not exist
+	//		@key: key to count
+	int valueCount(string &key);
+
+	// Value count statistics
+	map<string, int>* valueCount();
 };
 
 

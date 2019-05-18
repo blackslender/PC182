@@ -151,15 +151,13 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="kernel.cu" />
+    <CudaCompile Include="support.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DataStructures.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DataStructures.h" />
-    <ClInclude Include="SharedHeader.h" />
+    <ClInclude Include="support.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="data.csv" />
