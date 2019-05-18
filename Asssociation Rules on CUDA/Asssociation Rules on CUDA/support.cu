@@ -140,11 +140,28 @@ bool Dataset::newRecord(set<string> &recordSet) {
 		else idx = jt->second;
 		setbit(currentRecord, idx, 1);
 	}
-	for (int i = 0; i < SETSIZE; i++) { 
+	for (int i = 0; i < SETSIZE; i++) {
 		bitset<32> x(currentRecord[i]);
-		cout << x;} cout << endl;
+		cout << x;
+	} cout << endl;
 	bool result = newRecord(currentRecord);
+	delete[] currentRecord;
 	return result;
+}
+
+int* Dataset::recordSetToBit(set<string> &recordSet) {
+	int *currentRecord = new int[SETSIZE];
+	for (int i = 0; i < SETSIZE; i++) currentRecord[i] = 0;
+	set<string>::iterator it;
+	for (it = recordSet.begin(); it != recordSet.end(); it++) {
+		map<string, int>::iterator jt = attributesIndex->find(*it);
+		int idx;
+		if (jt == attributesIndex->end())
+			idx = newAttribute(*it);
+		else idx = jt->second;
+		setbit(currentRecord, idx, 1);
+	}
+	return currentRecord;
 }
 
 int Dataset::newAttribute(string attrName) {
@@ -164,4 +181,21 @@ bool Dataset::syncHostToDevice() {
 int* Dataset::getRecord(int recordIndex) {
 	int *currentRecord = new int[SETSIZE];
 	cudaError_t e = cudaMemcpy(currentRecord, data[recordIndex], SETSIZE * sizeof(int), cudaMemcpyDeviceToHost);
+}
+
+// Calculate support parallely
+//		@_re: pointer to the record to be check
+//		@_check: marking array
+//		@_data: dataset
+__global__ void calSupport(int* _re, char* _check, int** _data) {
+	int idx = blockIdx.x;
+	
+}
+
+double Dataset::supportRate(set<string> &record) {
+	int* re = recordSetToBit(record);
+	char* check = new char[*recordCount];
+
+	int *_re; cudaMalloc(&re, sizeof(int)*SETSIZE);
+	int *_check; cudaMalloc(&re, (*recordCount) * sizeof(char));
 }
