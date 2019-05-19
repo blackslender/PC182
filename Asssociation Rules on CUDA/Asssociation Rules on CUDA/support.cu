@@ -140,10 +140,7 @@ bool Dataset::newRecord(set<string> &recordSet) {
 		else idx = jt->second;
 		setbit(currentRecord, idx, 1);
 	}
-	for (int i = 0; i < SETSIZE; i++) {
-		bitset<32> x(currentRecord[i]);
-		cout << x;
-	} cout << endl;
+
 	bool result = newRecord(currentRecord);
 	delete[] currentRecord;
 	return result;
@@ -181,6 +178,7 @@ bool Dataset::syncHostToDevice() {
 int* Dataset::getRecord(int recordIndex) {
 	int *currentRecord = new int[SETSIZE];
 	cudaError_t e = cudaMemcpy(currentRecord, data[recordIndex], SETSIZE * sizeof(int), cudaMemcpyDeviceToHost);
+	return currentRecord;
 }
 
 // Calculate support parallely
@@ -189,13 +187,28 @@ int* Dataset::getRecord(int recordIndex) {
 //		@_data: dataset
 __global__ void calSupport(int* _re, char* _check, int** _data) {
 	int idx = blockIdx.x;
-	
+	int i = threadIdx.x;
+	_check[idx] = 1;
+	int q = _data[idx][i] & _re[i];
+	if (q != _re[i]) _check[idx] = 0;
+
 }
 
 double Dataset::supportRate(set<string> &record) {
 	int* re = recordSetToBit(record);
 	char* check = new char[*recordCount];
+	for (int i = 0; i < *recordCount; i++) check[i] = 0;
 
-	int *_re; cudaMalloc(&re, sizeof(int)*SETSIZE);
-	int *_check; cudaMalloc(&re, (*recordCount) * sizeof(char));
+	int *_re; cudaMalloc(&_re, sizeof(int)*SETSIZE);
+	char *_check; cudaMalloc(&_check, (*recordCount) * sizeof(char));
+	cudaMemcpy(_re, re, SETSIZE * sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(_check, check, (*recordCount) * sizeof(char), cudaMemcpyHostToDevice);
+
+	calSupport << <*recordCount, SETSIZE >> > (_re, _check, _data);
+	cudaMemcpy(check, _check, (*recordCount) * sizeof(char), cudaMemcpyDeviceToHost);
+
+	int suppCount = 0;
+	for (int i = 0; i < *recordCount; i++)
+		if (check[i] == 1) suppCount++;
+	return 1.0*suppCount / (*recordCount);
 }

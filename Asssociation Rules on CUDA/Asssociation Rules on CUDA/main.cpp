@@ -3,7 +3,7 @@
 #include <string>
 #include <set>
 #include "support.h"
-
+#include <bitset>
 using namespace std;
 
 #define SUP_RATE 0.6
@@ -20,12 +20,12 @@ int main(int argc, char **argv) {
 	s.insert("attr2");
 	s.insert("attr3");
 	d->newRecord(s);
-	set<string> s2,s3;
+	set<string> s2;
 	s2.insert("attr2");
-	s2.insert("attr3");
+	s2.insert("attr4");
 	d->newRecord(s2);
-	s3.insert("atr4");
-	d->newRecord(s3);
+	d->newRecord(s2);
+	cout << d->supportRate(s2);
 	return 0;
 }
 

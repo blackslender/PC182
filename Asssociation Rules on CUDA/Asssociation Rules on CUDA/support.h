@@ -8,7 +8,7 @@
 #include <string>
 #include <set>
 // Maximum number to be stored in BinarySet
-#define SETSIZE 16
+#define SETSIZE 1
 
 using namespace std;
 
@@ -44,10 +44,7 @@ class Dataset {
 	// This should be called before using any GPU method
 	bool syncHostToDevice();
 
-	// Get a binary array represents for the index
-	//		@recordIndex: index of the record in dataset
-	// THIS FUNCTION SHOULDN'T BE USED, JUST FOR TESTING
-	int* getRecord(int recordIndex);
+	
 
 	// This function is used to convert a record represented as set to a binary array
 	//		@recordSet: set of attribute references to the record
@@ -68,6 +65,11 @@ public:
 	// Calculate the support rate of a record over the dataset
 	//		@recordSet: set<string> of records, each string represents an attribute
 	double supportRate(set<string> &recordSet);
+
+	// Get a binary array represents for the index
+	//		@recordIndex: index of the record in dataset
+	// THIS FUNCTION SHOULDN'T BE USED, JUST FOR TESTING
+	int* getRecord(int recordIndex);
 };
 
 #endif
