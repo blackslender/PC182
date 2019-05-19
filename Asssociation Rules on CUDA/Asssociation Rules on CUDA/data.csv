@@ -1,5 +1,7 @@
 name,A,B,C,D,E
-1,y,n,y,y,n
-2,n,y,y,n,y
-3,y,y,y,n,y
-4,n,y,n,n,y
+1,y,y,y,y,y
+2,n,y,y,y,y
+3,n,n,y,y,y
+4,n,n,n,y,y
+5,n,n,n,n,y
+6,n,n,n,n,n

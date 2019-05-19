@@ -151,17 +151,22 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="support.cu" />
+    <CudaCompile Include="DatasetGPU.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="DatasetCPU.cpp" />
+    <ClCompile Include="support.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DatasetGPU.h" />
+    <ClInclude Include="DatasetCPU.h" />
     <ClInclude Include="support.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="data.csv" />
     <None Include="data.dat" />
+    <None Include="dataset.csv" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
