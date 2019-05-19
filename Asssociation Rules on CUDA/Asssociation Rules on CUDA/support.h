@@ -7,8 +7,11 @@
 #include <map>
 #include <string>
 #include <set>
+
 // Maximum number to be stored in BinarySet
-#define SETSIZE 1
+#define SETSIZE 16
+
+#define DEFAULT_RECORDS_COUNT 16
 
 using namespace std;
 
@@ -25,6 +28,7 @@ class Dataset {
 	int *_attrCount;
 
 	map<string, int> *attributesIndex;
+	vector<string> *attributesList;
 
 	Dataset() {
 
@@ -35,16 +39,11 @@ class Dataset {
 	//		Return: true if record is successfully inserted, otherwise false
 	bool newRecord(const int* recordRow);
 
-	// New attribute
-	//		@attrName: a string represents for the attribute
-	//		Return: index of the new attribute to be stored
-	int newAttribute(string attrName);
-
 	// Sync values from host to device
 	// This should be called before using any GPU method
 	bool syncHostToDevice();
 
-	
+
 
 	// This function is used to convert a record represented as set to a binary array
 	//		@recordSet: set of attribute references to the record
@@ -66,10 +65,25 @@ public:
 	//		@recordSet: set<string> of records, each string represents an attribute
 	double supportRate(set<string> &recordSet);
 
+	// Calculate the confidendce rate of a rule over the dataset
+	//		@lhsSet: set<string> of lhs attributes, each string represents an attribute
+	//		@rhsSet: set<string> of rhs attributes, each string represents an attribute
+	double confidenceRate(set<string> &lhsSet, set<string> &rhsSet);
+
 	// Get a binary array represents for the index
 	//		@recordIndex: index of the record in dataset
 	// THIS FUNCTION SHOULDN'T BE USED, JUST FOR TESTING
 	int* getRecord(int recordIndex);
+
+	// New attribute
+	//		@attrName: a string represents for the attribute
+	//		Return: index of the new attribute to be stored
+	int newAttribute(string attrName);
+
+	vector<string> *getAttributesSet() { return attributesList; }
+
 };
+
+Dataset* readCSV(string filename);
 
 #endif

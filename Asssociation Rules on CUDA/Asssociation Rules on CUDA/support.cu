@@ -2,7 +2,8 @@
 #include <iostream>
 #include "support.h"
 #include <bitset>
-
+#include <fstream>
+#include <sstream>
 using namespace std;
 
 __global__ void addKernel(int *c, const int *a, const int *b)
@@ -113,6 +114,7 @@ Dataset::Dataset(int maxRecords) {
 	recordCount = new int(0);
 	attrCount = new int(0);
 	attributesIndex = new map<string, int>();
+	attributesList = new vector<string>();
 	syncHostToDevice();
 	data = new int*[maxRecords];
 	for (int i = 0; i < maxRecords; i++)
@@ -163,6 +165,7 @@ int* Dataset::recordSetToBit(set<string> &recordSet) {
 
 int Dataset::newAttribute(string attrName) {
 	(*attributesIndex)[attrName] = (*attrCount)++;
+	attributesList->push_back(attrName);
 	syncHostToDevice();
 	return (*attrCount - 1);
 }
@@ -211,4 +214,50 @@ double Dataset::supportRate(set<string> &record) {
 	for (int i = 0; i < *recordCount; i++)
 		if (check[i] == 1) suppCount++;
 	return 1.0*suppCount / (*recordCount);
+}
+
+double Dataset::confidenceRate(set<string> &lhsSet,set<string> &rhsSet) {
+	double s1 = supportRate(lhsSet);
+	set<string> s;
+	s.insert(lhsSet.begin(), lhsSet.end());
+	s.insert(rhsSet.begin(), rhsSet.end());
+	double s2 = supportRate(s);
+	return s2 / s1;
+}
+
+Dataset* readCSV(string filename) {
+	ifstream iF;
+	iF.open(filename, ios::in);
+
+	string line;
+	getline(iF, line);
+	Dataset *d = new Dataset(DEFAULT_RECORDS_COUNT);
+	set<string> attributesSet;
+
+	// Read attribute names
+	stringstream ss(line);
+	string sname;
+	getline(ss, sname, ','); // Skip the first "name" thing
+	while (getline(ss, sname, ',')) {
+		d->newAttribute(sname);
+	}
+
+	// Now read records
+	while (getline(iF, line)) {
+		stringstream ss(line);
+		string value;
+		set<string> currentRecord;
+		int index = 0;
+		getline(ss, sname, ','); // Skip the record name
+		while (getline(ss, value, ',')) {
+			if (value == "y" || value == "Y" || value == "1")
+				currentRecord.insert(d->getAttributesSet()->at(index));
+			index++;
+		}
+
+		// Print current record
+		
+		d->newRecord(currentRecord);
+	}
+	return d;
 }

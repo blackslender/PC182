@@ -1,4 +1,5 @@
-name,a1,a2,a3,a4,a5
-a,y,y,3,4,5
-b,5,2,y,1,4
-c,?,?,?,y,?
+name,A,B,C,D,E
+1,y,n,y,y,n
+2,n,y,y,n,y
+3,y,y,y,n,y
+4,n,y,n,n,y
