@@ -1,7 +1,0 @@
-﻿  main.cpp
-  Asssociation Rules on CUDA.vcxproj -> C:\Users\Hoang\OneDrive\Documents\TTSS\PC182\Asssociation Rules on CUDA\Debug\Asssociation Rules on CUDA.exe
-  Asssociation Rules on CUDA.vcxproj -> C:\Users\Hoang\OneDrive\Documents\TTSS\PC182\Asssociation Rules on CUDA\Debug\Asssociation Rules on CUDA.pdb (Full PDB)
-  copy "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\cudart*.dll" "C:\Users\Hoang\OneDrive\Documents\TTSS\PC182\Asssociation Rules on CUDA\Debug\"
-  C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\cudart32_80.dll
-  C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v8.0\bin\cudart64_80.dll
-          2 file(s) copied.
