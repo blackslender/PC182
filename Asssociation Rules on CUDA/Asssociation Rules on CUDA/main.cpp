@@ -6,7 +6,6 @@
 #include <queue>
 #include <stack>
 #include <utility>
-#include <Windows.h>
 #include <iomanip>
 #include "support.h"
 #include "DatasetCPU.h"
@@ -74,9 +73,6 @@ void findRulesCPU(set<string> &s, set<string>::iterator it, set<string> &ls, set
 
 int runOnCPU(int argc, char **argv) {
 	gputick = 0;
-	unsigned long long totaltick = GetTickCount64();
-
-
 	//if (!testCudaForError()) {
 	//	cout << "Error while working with GPU...\n";
 	//	return -1;
@@ -104,7 +100,8 @@ int runOnCPU(int argc, char **argv) {
 		if (support > SUP_RATE) {
 			for (int i = ind; i < attributes.size(); i++) {
 				int* newSet = new int[SETSIZE];
-				memcpy(newSet, currentSet, SETSIZE * sizeof(int));
+				// memcpy(newSet, currentSet, SETSIZE * sizeof(int));
+				for (int i=0;i<SETSIZE;i++) newSet[i] = currentSet[i];
 				setbit(newSet, i, 1);
 				pair<int*, int> p;
 				p.first = newSet;
@@ -146,14 +143,11 @@ int runOnCPU(int argc, char **argv) {
 			delete q;
 		}
 	}
-	cout << "\nTotal time: " << (GetTickCount64() - totaltick) / 1000.0 << endl; cout.flush();
-	cout << "GPU time: " << gputick / 1000.0 << endl; cout.flush();
 	return 0;
 }
 
 int runOnGPU(int argc, char **argv) {
 	gputick = 0;
-	unsigned long long totaltick = GetTickCount64();
 
 
 	if (!testCudaForError()) {
@@ -185,7 +179,8 @@ int runOnGPU(int argc, char **argv) {
 		if (support > SUP_RATE) {
 			for (int i = ind; i < attributes.size(); i++) {
 				int* newSet = new int[SETSIZE];
-				memcpy(newSet, currentSet, SETSIZE * sizeof(int));
+				// memcpy(newSet, currentSet, SETSIZE * sizeof(int));
+				for (int i=0;i<SETSIZE;i++) newSet[i] = currentSet[i];
 				setbit(newSet, i, 1);
 				pair<int*, int> p;
 				p.first = newSet;
@@ -224,17 +219,18 @@ int runOnGPU(int argc, char **argv) {
 			delete q;
 		}
 	}
-	cout << "\nTotal time: " << (GetTickCount64() - totaltick) / 1000.0 << endl; cout.flush();
-	cout << "GPU time: " << gputick / 1000.0 << endl; cout.flush();
 	return 0;
 }
 
 
 int main(int argc, char** argv) {
-	cout << "\n\n-- GPU test --" << endl;
-	runOnGPU(argc, argv);
-
-	cout << "\n\n-- CPU test --" << endl;
-	runOnCPU(argc, argv);
+	
+	if (argv[3][0]=='0') {
+		cout << "\n\n-- GPU test --" << endl;
+		runOnGPU(argc, argv);
+	} else {
+		cout << "\n\n-- CPU test --" << endl;
+		runOnCPU(argc, argv);
+	}
 	
 }

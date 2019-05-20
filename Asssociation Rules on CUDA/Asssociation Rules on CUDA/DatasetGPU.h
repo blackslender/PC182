@@ -71,7 +71,7 @@ public:
 	//		@recordSet: set of attribute references to the record
 	//		Return: Pointer to the binary array
 	// HEAP VALUE SHOULD BE CLEAN AFTER USING
-	int* DatasetGPU::recordSetToBit(set<string> &recordSet);
+	int* recordSetToBit(set<string> &recordSet);
 
 	set<string>* bitToRecordSet(int arr[]);
 

@@ -22,7 +22,8 @@ DatasetCPU::DatasetCPU(int maxRecords) {
 
 bool DatasetCPU::newRecord(const int* recordRow) {
 	int rowIndex = (*recordCount)++;
-	memcpy(data[rowIndex], recordRow, SETSIZE * sizeof(int));
+	// memcpy(data[rowIndex], recordRow, SETSIZE * sizeof(int));
+	for (int i=0;i<SETSIZE;i++) data[rowIndex][i] = recordRow[i];
 	return true;
 }
 
@@ -74,7 +75,8 @@ int DatasetCPU::newAttribute(string attrName) {
 
 int* DatasetCPU::getRecord(int recordIndex) {
 	int *currentRecord = new int[SETSIZE];
-	memcpy(currentRecord, data[recordIndex], SETSIZE * sizeof(int));
+	// memcpy(currentRecord, data[recordIndex], SETSIZE * sizeof(int));
+	for (int i=0;i<SETSIZE;i++) currentRecord[i] = data[recordIndex][i];
 	return currentRecord;
 }
 

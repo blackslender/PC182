@@ -1,16 +1,10 @@
 #include <cstdio>
 #include <iostream>
-#include "DatasetGPU.h"
+#include "support.h"
 #include <bitset>
 #include <fstream>
 #include <sstream>
-#include "support.h"
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
-
 using namespace std;
-
-extern unsigned long long gputick;
 
 __global__ void addKernel(int *c, const int *a, const int *b)
 {
@@ -105,29 +99,38 @@ Error:
 	return cudaStatus == cudaSuccess;
 }
 
+void setbit(int arr[], int index, bool value) {
+	int arrIndex = 0;
+	while (index > sizeof(int)) {
+		index -= sizeof(int);
+		arrIndex++;
+	}
+	int q = 1 << index;
 
-DatasetGPU::DatasetGPU(int maxRecords) {
-	bool success = true;
+	arr[arrIndex] ^= q;
+}
+
+Dataset::Dataset(int maxRecords) {
 	recordCount = new int(0);
 	attrCount = new int(0);
 	attributesIndex = new map<string, int>();
 	attributesList = new vector<string>();
+	syncHostToDevice();
 	data = new int*[maxRecords];
-	for (int i = 0; i < maxRecords; i++) 
-		if (cudaMalloc(&(data[i]), SETSIZE * sizeof(int)) != cudaSuccess) success = false;
-	
-	if (cudaMalloc(&_data, maxRecords * sizeof(int*)) != cudaSuccess) success = false;
-	if (cudaMemcpy(_data, data, maxRecords * sizeof(int*), cudaMemcpyHostToDevice) != cudaSuccess) success = false;
-	if (!success) cout << "Error while working with GPU (Constructor)n";
+	for (int i = 0; i < maxRecords; i++)
+		cudaMalloc(&(data[i]), SETSIZE * sizeof(int));
+	cudaMalloc(&_data, maxRecords * sizeof(int*));
+	cudaMemcpy(_data, data, maxRecords * sizeof(int*), cudaMemcpyHostToDevice);
 }
 
-bool DatasetGPU::newRecord(const int* recordRow) {
+bool Dataset::newRecord(const int* recordRow) {
 	int rowIndex = (*recordCount)++;
 	cudaError_t e = cudaMemcpy(data[rowIndex], recordRow, SETSIZE * sizeof(int), cudaMemcpyHostToDevice);
+	syncHostToDevice();
 	return (e == cudaSuccess);
 }
 
-bool DatasetGPU::newRecord(set<string> &recordSet) {
+bool Dataset::newRecord(set<string> &recordSet) {
 	int *currentRecord = new int[SETSIZE];
 	for (int i = 0; i < SETSIZE; i++) currentRecord[i] = 0;
 	set<string>::iterator it;
@@ -145,7 +148,7 @@ bool DatasetGPU::newRecord(set<string> &recordSet) {
 	return result;
 }
 
-int* DatasetGPU::recordSetToBit(set<string> &recordSet) {
+int* Dataset::recordSetToBit(set<string> &recordSet) {
 	int *currentRecord = new int[SETSIZE];
 	for (int i = 0; i < SETSIZE; i++) currentRecord[i] = 0;
 	set<string>::iterator it;
@@ -160,31 +163,31 @@ int* DatasetGPU::recordSetToBit(set<string> &recordSet) {
 	return currentRecord;
 }
 
-set<string>* DatasetGPU::bitToRecordSet(int arr[]) {
-	set<string>* s = new set<string>();
-	for (int i = 0; i < attributesList->size(); i++)
-		if (getbit(arr, i)) s->insert(attributesList->at(i));
-	return s;
-}
-
-int DatasetGPU::newAttribute(string attrName) {
+int Dataset::newAttribute(string attrName) {
 	(*attributesIndex)[attrName] = (*attrCount)++;
 	attributesList->push_back(attrName);
+	syncHostToDevice();
 	return (*attrCount - 1);
 }
 
+bool Dataset::syncHostToDevice() {
+	cudaError_t e = cudaMemcpy(recordCount, _recordCount, sizeof(int), cudaMemcpyHostToDevice);
+	if (e != cudaSuccess) return false;
+	e = cudaMemcpy(attrCount, _attrCount, sizeof(int), cudaMemcpyHostToDevice);
+	if (e != cudaSuccess) return false;
+	return true;
+}
 
-int* DatasetGPU::getRecord(int recordIndex) {
+int* Dataset::getRecord(int recordIndex) {
 	int *currentRecord = new int[SETSIZE];
 	cudaError_t e = cudaMemcpy(currentRecord, data[recordIndex], SETSIZE * sizeof(int), cudaMemcpyDeviceToHost);
-	if (e != cudaSuccess) cout << "Error while working with GPU (get record)...\n";
 	return currentRecord;
 }
 
 // Calculate support parallely
 //		@_re: pointer to the record to be check
 //		@_check: marking array
-//		@_data: DatasetGPU
+//		@_data: dataset
 __global__ void calSupport(int* _re, char* _check, int** _data) {
 	int idx = blockIdx.x;
 	int i = threadIdx.x;
@@ -194,41 +197,26 @@ __global__ void calSupport(int* _re, char* _check, int** _data) {
 
 }
 
-double DatasetGPU::supportRate(set<string> &record) {
+double Dataset::supportRate(set<string> &record) {
 	int* re = recordSetToBit(record);
 	char* check = new char[*recordCount];
+	for (int i = 0; i < *recordCount; i++) check[i] = 0;
+
 	int *_re; cudaMalloc(&_re, sizeof(int)*SETSIZE);
 	char *_check; cudaMalloc(&_check, (*recordCount) * sizeof(char));
-	cudaError_t e;
-	e = cudaMemcpy(_re, re, SETSIZE * sizeof(int), cudaMemcpyHostToDevice);
-	if (e != cudaSuccess)  cout << "Error while working with GPU (support rate)...\n";
+	cudaMemcpy(_re, re, SETSIZE * sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(_check, check, (*recordCount) * sizeof(char), cudaMemcpyHostToDevice);
+
 	calSupport << <*recordCount, SETSIZE >> > (_re, _check, _data);
-	e = cudaMemcpy(check, _check, (*recordCount) * sizeof(char), cudaMemcpyDeviceToHost);
-	if (e != cudaSuccess) cout << "Error while working with GPU (support rate)...\n";
+	cudaMemcpy(check, _check, (*recordCount) * sizeof(char), cudaMemcpyDeviceToHost);
+
 	int suppCount = 0;
 	for (int i = 0; i < *recordCount; i++)
 		if (check[i] == 1) suppCount++;
 	return 1.0*suppCount / (*recordCount);
 }
 
-double DatasetGPU::supportRate(int* record) {
-	int* re = record;
-	char* check = new char[*recordCount];
-	int *_re; cudaMalloc(&_re, sizeof(int)*SETSIZE);
-	char *_check; cudaMalloc(&_check, (*recordCount) * sizeof(char));
-	cudaError_t e;
-	e = cudaMemcpy(_re, re, SETSIZE * sizeof(int), cudaMemcpyHostToDevice);
-	if (e != cudaSuccess)  cout << "Error while working with GPU (support rate)...\n";
-	calSupport << <*recordCount, SETSIZE >> > (_re, _check, _data);
-	e = cudaMemcpy(check, _check, (*recordCount) * sizeof(char), cudaMemcpyDeviceToHost);
-	if (e != cudaSuccess) cout << "Error while working with GPU (support rate)...\n";
-	int suppCount = 0;
-	for (int i = 0; i < *recordCount; i++)
-		if (check[i] == 1) suppCount++;
-	return 1.0*suppCount / (*recordCount);
-}
-
-double DatasetGPU::confidenceRate(set<string> &lhsSet, set<string> &rhsSet) {
+double Dataset::confidenceRate(set<string> &lhsSet,set<string> &rhsSet) {
 	double s1 = supportRate(lhsSet);
 	set<string> s;
 	s.insert(lhsSet.begin(), lhsSet.end());
@@ -237,22 +225,13 @@ double DatasetGPU::confidenceRate(set<string> &lhsSet, set<string> &rhsSet) {
 	return s2 / s1;
 }
 
-double DatasetGPU::confidenceRate(int*lhsSet, int*rhsSet) {
-	double s1 = supportRate(lhsSet);
-	int* s = new int[SETSIZE];
-	for (int i = 0; i < SETSIZE; i++) s[i] = lhsSet[i] | rhsSet[i];
-	double s2 = supportRate(s);
-	delete[] s;
-	return s2 / s1;
-}
-
-DatasetGPU* DatasetGPU::readCSV(string filename) {
+Dataset* readCSV(string filename) {
 	ifstream iF;
 	iF.open(filename, ios::in);
 
 	string line;
 	getline(iF, line);
-	DatasetGPU *d = new DatasetGPU(DEFAULT_RECORDS_COUNT);
+	Dataset *d = new Dataset(DEFAULT_RECORDS_COUNT);
 	set<string> attributesSet;
 
 	// Read attribute names
@@ -277,8 +256,8 @@ DatasetGPU* DatasetGPU::readCSV(string filename) {
 		}
 
 		// Print current record
-
-		if (!d->newRecord(currentRecord)) cout << "Error while working with GPU (inserting record)...\n";
+		
+		d->newRecord(currentRecord);
 	}
 	return d;
 }
